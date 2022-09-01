@@ -1,0 +1,17 @@
+{
+    "name": "PostMVCUnityLocalSettings",
+    "rootNamespace": "",
+    "references": [
+        "PostMVC",
+        "PostMVCUnityApp"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
