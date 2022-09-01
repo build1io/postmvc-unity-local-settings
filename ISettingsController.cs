@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace Build1.PostMVC.UnityLocalSettings
+namespace Build1.PostMVC.Unity.Settings
 {
     public interface ISettingsController
     {

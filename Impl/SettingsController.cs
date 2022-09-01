@@ -2,13 +2,13 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using Build1.PostMVC.Core.Extensions.MVCS.Events;
-using Build1.PostMVC.Core.Extensions.MVCS.Injection;
-using Build1.PostMVC.UnityApp.Modules.App;
-using Build1.PostMVC.UnityApp.Modules.Logging;
+using Build1.PostMVC.Core.MVCS.Events;
+using Build1.PostMVC.Core.MVCS.Injection;
+using Build1.PostMVC.Unity.App.Modules.App;
+using Build1.PostMVC.Unity.App.Modules.Logging;
 using Newtonsoft.Json;
 
-namespace Build1.PostMVC.UnityLocalSettings.Impl
+namespace Build1.PostMVC.Unity.Settings.Impl
 {
     internal sealed class SettingsController : ISettingsController
     {

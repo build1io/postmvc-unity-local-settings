@@ -1,10 +1,10 @@
 using System;
-using Build1.PostMVC.Core.Extensions.MVCS.Commands;
-using Build1.PostMVC.Core.Extensions.MVCS.Events;
-using Build1.PostMVC.Core.Extensions.MVCS.Injection;
-using Build1.PostMVC.UnityApp.Modules.Logging;
+using Build1.PostMVC.Core.MVCS.Commands;
+using Build1.PostMVC.Core.MVCS.Events;
+using Build1.PostMVC.Core.MVCS.Injection;
+using Build1.PostMVC.Unity.App.Modules.Logging;
 
-namespace Build1.PostMVC.UnityLocalSettings.Commands
+namespace Build1.PostMVC.Unity.Settings.Commands
 {
     public sealed class SettingsLoadCommand : Command
     {

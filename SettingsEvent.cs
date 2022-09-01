@@ -1,7 +1,7 @@
 using System;
-using Build1.PostMVC.Core.Extensions.MVCS.Events;
+using Build1.PostMVC.Core.MVCS.Events;
 
-namespace Build1.PostMVC.UnityLocalSettings
+namespace Build1.PostMVC.Unity.Settings
 {
     public static class SettingsEvent
     {

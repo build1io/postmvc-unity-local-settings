@@ -3,7 +3,7 @@
 using UnityEditor;
 using UnityEngine;
 
-namespace Build1.PostMVC.UnityLocalSettings.Editor
+namespace Build1.PostMVC.Unity.Settings.Editor
 {
     public static class SettingsMenu
     {
