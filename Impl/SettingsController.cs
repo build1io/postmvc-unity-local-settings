@@ -249,21 +249,30 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         {
             if (!IsLoaded)
                 throw new Exception("Settings not loaded");
-            
-            if (_settingsValues.TryGetValue(setting.key, out var value))
-                return (T)value;
-            
-            return setting.defaultValue;
+
+            return GetSettingValue(setting);
         }
 
         public void SetSetting<T>(Setting<T> setting, T value)
         {
-            if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals((T)_settingsValues[setting.key], value))
+            if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValue(setting), value))
                 return;
 
             _settingsDirty = true;
             _settingsValues[setting.key] = value;
             Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
+        }
+
+        private T GetSettingValue<T>(Setting<T> setting)
+        {
+            if (_settingsValues.TryGetValue(setting.key, out var value))
+            {
+                if (typeof(T).IsEnum)
+                    return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
+                return (T)Convert.ChangeType(value, typeof(T));
+            }
+            
+            return setting.defaultValue;
         }
 
         /*
