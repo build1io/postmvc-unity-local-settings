@@ -17,8 +17,8 @@ namespace Build1.PostMVC.Unity.Settings
         
         void Save(bool force);
         
-        T    GetSetting<T>(Setting<T> setting) where T : struct;
-        void SetSetting<T>(Setting<T> setting, T value) where T : struct;
+        T    GetSetting<T>(Setting<T> setting);
+        void SetSetting<T>(Setting<T> setting, T value);
 
         void Reset();
     }

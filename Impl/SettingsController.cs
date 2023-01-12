@@ -245,7 +245,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
          * Management.
          */
 
-        public T GetSetting<T>(Setting<T> setting) where T : struct
+        public T GetSetting<T>(Setting<T> setting)
         {
             if (!IsLoaded)
                 throw new Exception("Settings not loaded");
@@ -256,7 +256,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             return setting.defaultValue;
         }
 
-        public void SetSetting<T>(Setting<T> setting, T value) where T : struct
+        public void SetSetting<T>(Setting<T> setting, T value)
         {
             if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals((T)_settingsValues[setting.key], value))
                 return;

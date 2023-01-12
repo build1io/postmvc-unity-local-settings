@@ -17,7 +17,7 @@ namespace Build1.PostMVC.Unity.Settings
         }
     }
 
-    public sealed class Setting<T> : Setting where T : struct
+    public sealed class Setting<T> : Setting
     {
         public new readonly T defaultValue;
 

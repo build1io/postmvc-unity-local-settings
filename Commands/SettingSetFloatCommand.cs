@@ -3,11 +3,12 @@ using Build1.PostMVC.Core.MVCS.Injection;
 
 namespace Build1.PostMVC.Unity.Settings.Commands
 {
-    public sealed class SettingSetCommand<V> : Command<V, Setting<V>> where V : struct
+    [Poolable]
+    public sealed class SettingSetFloatCommand : Command<float, Setting<float>>
     {
         [Inject] public ISettingsController SettingsController { get; set; }
 
-        public override void Execute(V value, Setting<V> setting)
+        public override void Execute(float value, Setting<float> setting)
         {
             SettingsController.SetSetting(setting, value);
         }
