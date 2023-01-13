@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using Build1.PostMVC.Core.MVCS.Events;
 using Build1.PostMVC.Core.MVCS.Injection;
 using Build1.PostMVC.Unity.App.Modules.App;
@@ -18,10 +19,10 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         [Inject]                public IEventDispatcher Dispatcher    { get; set; }
         [Inject]                public IAppController   AppController { get; set; }
 
-        public IReadOnlyList<Setting> ExistingSettings => _settings;
-        public bool                   IsLoaded         { get; private set; }
+        public IEnumerable<Setting> ExistingSettings => _settings;
+        public bool                 IsLoaded         { get; private set; }
 
-        private IReadOnlyList<Setting>     _settings;
+        private IEnumerable<Setting>       _settings;
         private string                     _settingsFolder;
         private Dictionary<string, object> _settingsValues;
         private string                     _settingsFilePath;
@@ -66,7 +67,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
          * Loading.
          */
 
-        public void Load(IReadOnlyList<Setting> settings)
+        public void Load(IEnumerable<Setting> settings)
         {
             Unload();
             
@@ -75,7 +76,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Load();
         }
         
-        public void Load(IReadOnlyList<Setting> settings, string userId)
+        public void Load(IEnumerable<Setting> settings, string userId)
         {
             Unload();
             
@@ -87,7 +88,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
 
         private void Load()
         {
-            if (_settings == null || _settings.Count == 0)
+            if (_settings == null || !_settings.Any())
             {
                 Dispatcher.Dispatch(SettingsEvent.LoadFail, new Exception("Settings set can't be null or empty"));
                 return;

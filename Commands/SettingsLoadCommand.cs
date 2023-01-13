@@ -6,12 +6,12 @@ using Build1.PostMVC.Core.MVCS.Injection;
 
 namespace Build1.PostMVC.Unity.Settings.Commands
 {
-    public sealed class SettingsLoadCommand : Command<IReadOnlyList<Setting>>
+    public sealed class SettingsLoadCommand : Command<IEnumerable<Setting>>
     {
         [Inject] public IEventDispatcher    Dispatcher         { get; set; }
         [Inject] public ISettingsController SettingsController { get; set; }
 
-        public override void Execute(IReadOnlyList<Setting> existingSettings)
+        public override void Execute(IEnumerable<Setting> existingSettings)
         {
             Retain();
 
