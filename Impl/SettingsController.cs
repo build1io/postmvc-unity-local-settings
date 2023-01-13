@@ -18,7 +18,8 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         [Inject]                public IEventDispatcher Dispatcher    { get; set; }
         [Inject]                public IAppController   AppController { get; set; }
 
-        public bool IsLoaded { get; private set; }
+        public IReadOnlyList<Setting> ExistingSettings => _settings;
+        public bool                   IsLoaded         { get; private set; }
 
         private IReadOnlyList<Setting>     _settings;
         private string                     _settingsFolder;
@@ -41,71 +42,58 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Dispatcher.RemoveListener(AppEvent.Restarting, OnAppRestarting);
             Dispatcher.RemoveListener(AppEvent.Quitting, OnAppQuitting);
         }
-
+        
         /*
-         * Configuration.
+         * Setup.
          */
 
-        public void SetSettingsSet(IReadOnlyList<Setting> settings)
+        public void SetUserId(string userId)
         {
-            Log.Debug("Setting settings set...");
+            Log.Debug(f => $"Setting userId: \"{f}\" ...", userId);
 
             if (!CheckNotLoaded())
+            {
+                Log.Error("Settings already loaded. In order to change userId unload settings first.");
                 return;
+            }
 
-            _settings = settings;
+            _settingsFolder = userId;
 
-            Log.Debug("Setting set set");
-        }
-
-        public void SetSettingsFolder(string folder)
-        {
-            Log.Debug(f => $"Settings settings folder \"{f}\"...", folder);
-
-            if (!CheckNotLoaded())
-                return;
-
-            _settingsFolder = folder;
-
-            Log.Debug(p => $"Settings folder set: {p}", _settingsFolder);
+            Log.Debug(p => $"UserId set: {p}", _settingsFolder);
         }
 
         /*
          * Loading.
          */
 
-        public void Load(IReadOnlyList<Setting> settings, string folder)
-        {
-            if (!CheckNotLoaded())
-                return;
-
-            SetSettingsSet(settings);
-            SetSettingsFolder(folder);
-            Load();
-        }
-
         public void Load(IReadOnlyList<Setting> settings)
         {
-            if (!CheckNotLoaded())
-                return;
-
-            SetSettingsSet(settings);
+            Unload();
+            
+            _settings = settings;
+            
+            Load();
+        }
+        
+        public void Load(IReadOnlyList<Setting> settings, string userId)
+        {
+            Unload();
+            
+            _settings = settings;
+            _settingsFolder = userId;
+            
             Load();
         }
 
-        public void Load()
+        private void Load()
         {
-            if (!CheckNotLoaded())
-                return;
-
-            if (_settings == null)
+            if (_settings == null || _settings.Count == 0)
             {
-                Dispatcher.Dispatch(SettingsEvent.LoadFail, new Exception("Settings set not specified"));
+                Dispatcher.Dispatch(SettingsEvent.LoadFail, new Exception("Settings set can't be null or empty"));
                 return;
             }
 
             _settingsValues = new Dictionary<string, object>();
-
             _settingsFilePath = string.IsNullOrEmpty(_settingsFolder)
                                     ? Path.Combine(AppController.PersistentDataPath, SettingsFileName)
                                     : Path.Combine(AppController.PersistentDataPath, _settingsFolder, SettingsFileName);
@@ -177,26 +165,11 @@ namespace Build1.PostMVC.Unity.Settings.Impl
 
         public void Unload()
         {
-            if (!IsLoaded)
-            {
-                Log.Error("Settings not loaded.");
-                return;
-            }
-
-            try
-            {
-                _settings = null;
-                _settingsValues = null;
-                _settingsFilePath = null;
-            }
-            catch (Exception exception)
-            {
-                Dispatcher.Dispatch(SettingsEvent.UnloadFail, exception);
-                return;
-            }
+            _settings = null;
+            _settingsValues = null;
+            _settingsFilePath = null;
 
             IsLoaded = false;
-            Dispatcher.Dispatch(SettingsEvent.UnloadSuccess);
         }
 
         /*
@@ -242,40 +215,6 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         }
 
         /*
-         * Management.
-         */
-
-        public T GetSetting<T>(Setting<T> setting)
-        {
-            if (!IsLoaded)
-                throw new Exception("Settings not loaded");
-
-            return GetSettingValue(setting);
-        }
-
-        public void SetSetting<T>(Setting<T> setting, T value)
-        {
-            if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValue(setting), value))
-                return;
-
-            _settingsDirty = true;
-            _settingsValues[setting.key] = value;
-            Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
-        }
-
-        private T GetSettingValue<T>(Setting<T> setting)
-        {
-            if (_settingsValues.TryGetValue(setting.key, out var value))
-            {
-                if (typeof(T).IsEnum)
-                    return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
-                return (T)Convert.ChangeType(value, typeof(T));
-            }
-            
-            return setting.defaultValue;
-        }
-
-        /*
          * Resetting.
          */
 
@@ -295,6 +234,40 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Log.Debug("Resetting ok");
 
             Dispatcher.Dispatch(SettingsEvent.Reset);
+        }
+        
+        /*
+         * Management.
+         */
+
+        public T GetSetting<T>(Setting<T> setting) where T : struct
+        {
+            if (!IsLoaded)
+                throw new Exception("Settings not loaded");
+
+            return GetSettingValue(setting);
+        }
+
+        public void SetSetting<T>(Setting<T> setting, T value) where T : struct
+        {
+            if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValue(setting), value))
+                return;
+
+            _settingsDirty = true;
+            _settingsValues[setting.key] = value;
+            Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
+        }
+
+        private T GetSettingValue<T>(Setting<T> setting) where T : struct
+        {
+            if (_settingsValues.TryGetValue(setting.key, out var value))
+            {
+                if (typeof(T).IsEnum)
+                    return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
+                return (T)Convert.ChangeType(value, typeof(T));
+            }
+            
+            return setting.defaultValue;
         }
 
         /*

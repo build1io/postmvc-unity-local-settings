@@ -4,22 +4,18 @@ namespace Build1.PostMVC.Unity.Settings
 {
     public interface ISettingsController
     {
-        bool IsLoaded { get; }
-        
-        void SetSettingsSet(IReadOnlyList<Setting> settings);
-        void SetSettingsFolder(string folder);
-        
-        void Load(IReadOnlyList<Setting> settings, string folder);
-        void Load(IReadOnlyList<Setting> settings);
-        void Load();
+        IReadOnlyList<Setting> ExistingSettings { get; }
+        bool                   IsLoaded         { get; }
 
+        void SetUserId(string userId);
+        
+        void Load(IReadOnlyList<Setting> existingSettings);
+        void Load(IReadOnlyList<Setting> existingSettings, string userId);
         void Unload();
-        
         void Save(bool force);
-        
-        T    GetSetting<T>(Setting<T> setting);
-        void SetSetting<T>(Setting<T> setting, T value);
-
         void Reset();
+        
+        T    GetSetting<T>(Setting<T> setting) where T : struct;
+        void SetSetting<T>(Setting<T> setting, T value) where T : struct;
     }
 }

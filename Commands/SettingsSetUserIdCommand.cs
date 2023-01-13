@@ -3,14 +3,13 @@ using Build1.PostMVC.Core.MVCS.Injection;
 
 namespace Build1.PostMVC.Unity.Settings.Commands
 {
-    [Poolable]
-    public sealed class SettingSetStringCommand : Command<string, Setting<string>>
+    public sealed class SettingsSetUserIdCommand : Command<string>
     {
         [Inject] public ISettingsController SettingsController { get; set; }
-
-        public override void Execute(string value, Setting<string> setting)
+        
+        public override void Execute(string userId)
         {
-            SettingsController.SetSetting(setting, value);
+            SettingsController.SetUserId(userId);
         }
     }
 }

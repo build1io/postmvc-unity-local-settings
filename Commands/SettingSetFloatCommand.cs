@@ -4,11 +4,11 @@ using Build1.PostMVC.Core.MVCS.Injection;
 namespace Build1.PostMVC.Unity.Settings.Commands
 {
     [Poolable]
-    public sealed class SettingSetFloatCommand : Command<float, Setting<float>>
+    public sealed class SettingSetFloatCommand : Command<Setting<float>, float>
     {
         [Inject] public ISettingsController SettingsController { get; set; }
 
-        public override void Execute(float value, Setting<float> setting)
+        public override void Execute(Setting<float> setting, float value)
         {
             SettingsController.SetSetting(setting, value);
         }
