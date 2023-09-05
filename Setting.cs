@@ -3,12 +3,17 @@ namespace Build1.PostMVC.Unity.Settings
     public abstract class Setting
     {
         public readonly string key;
-        public readonly object defaultValue;
+        public          object DefaultValue { get; private set; }
 
         protected Setting(string key, object defaultValue)
         {
             this.key = key;
-            this.defaultValue = defaultValue;
+            DefaultValue = defaultValue;
+        }
+
+        public void SetDefaultValue(object defaultValue)
+        {
+            DefaultValue = defaultValue;
         }
 
         public override string ToString()
@@ -19,11 +24,16 @@ namespace Build1.PostMVC.Unity.Settings
 
     public sealed class Setting<T> : Setting where T : struct
     {
-        public new readonly T defaultValue;
+        public new T DefaultValue { get; private set; }
 
         public Setting(string key, T defaultValue) : base(key, defaultValue)
         {
-            this.defaultValue = defaultValue;
+            DefaultValue = defaultValue;
+        }
+
+        public void SetDefaultValue(T defaultValue)
+        {
+            DefaultValue = defaultValue;
         }
     }
 }

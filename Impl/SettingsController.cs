@@ -126,9 +126,9 @@ namespace Build1.PostMVC.Unity.Settings.Impl
 
                 foreach (var setting in _settings)
                 {
-                    Log.Debug(() => setting.key + ": " + setting.defaultValue);
+                    Log.Debug(() => setting.key + ": " + setting.DefaultValue);
 
-                    _settingsValues[setting.key] = setting.defaultValue;
+                    _settingsValues[setting.key] = setting.DefaultValue;
                 }
 
                 return;
@@ -227,7 +227,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
                 return;
 
             foreach (var setting in _settings)
-                _settingsValues[setting.key] = setting.defaultValue;
+                _settingsValues[setting.key] = setting.DefaultValue;
 
             if (File.Exists(_settingsFilePath))
                 File.Delete(_settingsFilePath);
@@ -267,8 +267,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
                     return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
                 return (T)Convert.ChangeType(value, typeof(T));
             }
-            
-            return setting.defaultValue;
+            return setting.DefaultValue;
         }
 
         /*
