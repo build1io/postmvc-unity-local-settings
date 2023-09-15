@@ -2,7 +2,6 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
-using System.Linq;
 using Build1.PostMVC.Core.MVCS.Events;
 using Build1.PostMVC.Core.MVCS.Injection;
 using Build1.PostMVC.Unity.App.Modules.App;
@@ -19,14 +18,18 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         [Inject]                public IEventDispatcher Dispatcher    { get; set; }
         [Inject]                public IAppController   AppController { get; set; }
 
-        public IEnumerable<Setting> ExistingSettings => _settings;
-        public bool                 IsLoaded         { get; private set; }
+        public bool   Initialized          => _settings != null;
+        public bool   DeviceSettingsLoaded => _deviceSettingsValues != null;
+        public bool   UserSettingsLoaded   => _userSettingsValues != null;
+        public string UserId               { get; private set; }
 
-        private IEnumerable<Setting>       _settings;
-        private string                     _settingsFolder;
-        private Dictionary<string, object> _settingsValues;
-        private string                     _settingsFilePath;
-        private bool                       _settingsDirty;
+        private IEnumerable<Setting> _settings;
+
+        private Dictionary<string, object> _deviceSettingsValues;
+        private bool                       _deviceSettingsDirty;
+
+        private Dictionary<string, object> _userSettingsValues;
+        private bool                       _userSettingsDirty;
 
         [PostConstruct]
         public void PostConstruct()
@@ -43,244 +46,373 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Dispatcher.RemoveListener(AppEvent.Restarting, OnAppRestarting);
             Dispatcher.RemoveListener(AppEvent.Quitting, OnAppQuitting);
         }
-        
+
         /*
-         * Setup.
+         * Initialization.
          */
 
-        public void SetUserId(string userId)
+        public void Initialize(IEnumerable<Setting> settings)
         {
-            Log.Debug(f => $"Setting userId: \"{f}\" ...", userId);
+            if (_settings != null)
+                throw new Exception("Settings already initialized");
 
-            if (!CheckNotLoaded())
-            {
-                Log.Error("Settings already loaded. In order to change userId unload settings first.");
-                return;
-            }
-
-            _settingsFolder = userId;
-
-            Log.Debug(p => $"UserId set: {p}", _settingsFolder);
+            _settings = settings;
         }
 
         /*
-         * Loading.
+         * Device Settings.
          */
 
-        public void Load(IEnumerable<Setting> settings)
+        public void LoadDeviceSettings()
         {
-            Unload();
-            
-            _settings = settings;
-            
-            Load();
-        }
-        
-        public void Load(IEnumerable<Setting> settings, string userId)
-        {
-            Unload();
-            
-            _settings = settings;
-            _settingsFolder = userId;
-            
-            Load();
-        }
-
-        private void Load()
-        {
-            if (_settings == null || !_settings.Any())
+            if (!Initialized)
             {
-                Dispatcher.Dispatch(SettingsEvent.LoadFail, new Exception("Settings set can't be null or empty"));
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, new Exception("Settings not initialized"));
                 return;
             }
 
-            _settingsValues = new Dictionary<string, object>();
-            _settingsFilePath = string.IsNullOrEmpty(_settingsFolder)
-                                    ? Path.Combine(AppController.PersistentDataPath, SettingsFileName)
-                                    : Path.Combine(AppController.PersistentDataPath, _settingsFolder, SettingsFileName);
+            if (DeviceSettingsLoaded)
+            {
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, new Exception("Device settings already loaded"));
+                return;
+            }
 
-            Log.Debug(p => $"Settings file path: {p}", _settingsFilePath);
+            Log.Debug("Loading device settings...");
 
             try
             {
-                LoadImpl();
+                var path = Path.Combine(AppController.PersistentDataPath, SettingsFileName);
+                if (!File.Exists(path))
+                {
+                    _deviceSettingsValues = new Dictionary<string, object>();
+
+                    Log.Debug("Device settings file doesn't exist. Empty collection initialized.");
+                }
+                else
+                {
+                    Log.Debug(p => $"Reading device settings file... Path: {p}", path);
+
+                    var json = File.ReadAllText(path);
+
+                    _deviceSettingsValues = ParseSettingsJson(json, SettingType.Device);
+                }
             }
             catch (Exception exception)
             {
                 Log.Error(exception);
-                Dispatcher.Dispatch(SettingsEvent.LoadFail, exception);
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, exception);
                 return;
             }
 
-            IsLoaded = true;
-            Dispatcher.Dispatch(SettingsEvent.LoadSuccess);
+            Log.Debug("Device settings loaded");
+
+            Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, null);
         }
 
-        private void LoadImpl()
+        /*
+         * User Settings.
+         */
+
+        public void LoadUserSettings(string userId)
         {
-            Log.Debug("Loading...");
-
-            if (!File.Exists(_settingsFilePath))
+            if (!Initialized)
             {
-                Log.Debug("Settings file doesn't exist. Initializing default settings.");
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, new Exception("Settings not initialized"));
+                return;
+            }
 
-                foreach (var setting in _settings)
+            if (UserSettingsLoaded)
+            {
+                if (UserId == userId)
                 {
-                    Log.Debug(() => setting.key + ": " + setting.DefaultValue);
-
-                    _settingsValues[setting.key] = setting.DefaultValue;
+                    Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, new Exception("User settings already loaded"));
+                    return;
                 }
 
-                return;
+                Log.Warn("Another user settings loading requested. Previously loaded settings will be unloaded.");
             }
 
-            Log.Debug("Reading file...");
+            Log.Debug(i => $"Loading user settings... UserId: {i}", userId);
 
-            var json = File.ReadAllText(_settingsFilePath);
-
-            Log.Debug(j => $"Json: {j}", json);
-            Log.Debug("Parsing...");
-
-            var settings = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
-            foreach (var setting in _settings)
-            {
-                if (!settings.TryGetValue(setting.key, out var value))
-                    continue;
-
-                Log.Debug(() => setting.key + ": " + value);
-
-                if (bool.TryParse(value, out var valueBool))
-                    _settingsValues[setting.key] = valueBool;
-                else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueInt))
-                    _settingsValues[setting.key] = valueInt;
-                else if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueFloat))
-                    _settingsValues[setting.key] = valueFloat;
-            }
-
-            Log.Debug("Loading ok");
-        }
-
-        /*
-         * Unloading.
-         */
-
-        public void Unload()
-        {
-            _settings = null;
-            _settingsValues = null;
-            _settingsFilePath = null;
-
-            IsLoaded = false;
-        }
-
-        /*
-         * Save.
-         */
-
-        public void Save(bool force)
-        {
-            Log.Debug("Saving...");
-
-            if (!IsLoaded)
-            {
-                Log.Debug("Settings not loaded.");
-                return;
-            }
-
-            if (!_settingsDirty && !force)
-            {
-                Log.Debug("Saving prevented. Settings not dirty.");
-                return;
-            }
-
-            // We put in try/catch as this operation is performed when app is shutting down or put on pause.
-            // If it'll fail with an exception, other operations must not be interrupted.   
             try
             {
-                var json = JsonConvert.SerializeObject(_settingsValues);
+                var path = Path.Combine(AppController.PersistentDataPath, userId, SettingsFileName);
+                if (!File.Exists(path))
+                {
+                    _userSettingsValues = new Dictionary<string, object>();
 
-                Log.Debug(() => "Json: " + json);
+                    Log.Debug("User settings file doesn't exist. Empty collection initialized.");
+                }
+                else
+                {
+                    Log.Debug(p => $"Reading user settings file... Path: {p}", path);
 
-                File.WriteAllText(_settingsFilePath, json);
+                    var json = File.ReadAllText(path);
 
-                _settingsDirty = false;
+                    _userSettingsValues = ParseSettingsJson(json, SettingType.User);
+                }
             }
             catch (Exception exception)
             {
                 Log.Error(exception);
-                Dispatcher.Dispatch(SettingsEvent.SaveFail, exception);
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, exception);
                 return;
             }
 
-            Log.Debug("Saving ok");
+            Log.Debug(i => $"User settings loaded. UserId: {i}", userId);
+
+            UserId = userId;
+
+            Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, null);
+        }
+
+        public void UnloadUserSettings()
+        {
+            if (!UserSettingsLoaded)
+                return;
+
+            _userSettingsValues = null;
+
+            UserId = null;
+
+            Dispatcher.Dispatch(SettingsEvent.Unload, SettingType.User);
+        }
+
+        /*
+         * Management.
+         */
+
+        public T Get<T>(Setting<T> setting) where T : struct
+        {
+            switch (setting.type)
+            {
+                case SettingType.Device:
+
+                    if (!DeviceSettingsLoaded)
+                        throw new Exception("Device settings not loaded");
+
+                    return GetSettingValueFrom(_deviceSettingsValues, setting);
+
+                case SettingType.User:
+
+                    if (!UserSettingsLoaded)
+                        throw new Exception("User settings not loaded");
+
+                    return GetSettingValueFrom(_userSettingsValues, setting);
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
+        public void Set<T>(Setting<T> setting, T value) where T : struct
+        {
+            switch (setting.type)
+            {
+                case SettingType.Device:
+
+                    if (!DeviceSettingsLoaded)
+                        throw new Exception("Device settings not loaded");
+
+                    if (_deviceSettingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValueFrom(_deviceSettingsValues, setting), value))
+                        return;
+
+                    _deviceSettingsValues[setting.key] = value;
+                    _deviceSettingsDirty = true;
+
+                    break;
+
+                case SettingType.User:
+
+                    if (!UserSettingsLoaded)
+                        throw new Exception("User settings not loaded");
+
+                    if (_userSettingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValueFrom(_userSettingsValues, setting), value))
+                        return;
+
+                    _userSettingsValues[setting.key] = value;
+                    _userSettingsDirty = true;
+
+                    break;
+
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+
+            Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
         }
 
         /*
          * Resetting.
          */
 
-        public void Reset()
+        public void Reset(SettingType type)
         {
-            Log.Debug("Resetting...");
+            if ((type & SettingType.Device) == SettingType.Device)
+            {
+                if (!DeviceSettingsLoaded)
+                    throw new Exception("Device settings not loaded");
 
-            if (!CheckNotLoaded())
-                return;
+                Log.Debug("Resetting device settings...");
 
-            foreach (var setting in _settings)
-                _settingsValues[setting.key] = setting.DefaultValue;
+                var path = Path.Combine(AppController.PersistentDataPath, SettingsFileName);
+                if (File.Exists(path))
+                    File.Delete(path);
 
-            if (File.Exists(_settingsFilePath))
-                File.Delete(_settingsFilePath);
+                _deviceSettingsValues.Clear();
 
-            Log.Debug("Resetting ok");
+                Log.Debug("Device settings reset");
+            }
 
-            Dispatcher.Dispatch(SettingsEvent.Reset);
+            if ((type & SettingType.User) == SettingType.User)
+            {
+                if (!UserSettingsLoaded)
+                    throw new Exception("User settings not loaded");
+
+                Log.Debug("Resetting user settings...");
+
+                var path = Path.Combine(AppController.PersistentDataPath, UserId, SettingsFileName);
+                if (File.Exists(path))
+                    File.Delete(path);
+
+                _userSettingsValues.Clear();
+
+                Log.Debug(i => $"User settings reset. UserId: {i}", UserId);
+            }
+
+            Dispatcher.Dispatch(SettingsEvent.Reset, type);
         }
-        
+
         /*
-         * Management.
+         * Saving.
          */
 
-        public T GetSetting<T>(Setting<T> setting) where T : struct
+        public void Save(SettingType type)
         {
-            if (!IsLoaded)
-                throw new Exception("Settings not loaded");
-
-            return GetSettingValue(setting);
-        }
-
-        public void SetSetting<T>(Setting<T> setting, T value) where T : struct
-        {
-            if (_settingsValues.ContainsKey(setting.key) && EqualityComparer<T>.Default.Equals(GetSettingValue(setting), value))
-                return;
-
-            _settingsDirty = true;
-            _settingsValues[setting.key] = value;
-            Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
-        }
-
-        private T GetSettingValue<T>(Setting<T> setting) where T : struct
-        {
-            if (_settingsValues.TryGetValue(setting.key, out var value))
+            if ((type & SettingType.Device) == SettingType.Device)
             {
-                if (typeof(T).IsEnum)
-                    return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
-                return (T)Convert.ChangeType(value, typeof(T));
+                if (!DeviceSettingsLoaded)
+                {
+                    Log.Warn("Saving. Device settings not loaded");
+                }
+                else
+                {
+                    if (!_deviceSettingsDirty)
+                    {
+                        Log.Debug("Device settings not dirty");
+                    }
+                    else
+                    {
+                        Log.Debug("Saving device settings...");
+
+                        // We put in try/catch as this operation is performed when app is shutting down or put on pause.
+                        // If it'll fail with an exception, other operations must not be interrupted.   
+                        try
+                        {
+                            var path = Path.Combine(AppController.PersistentDataPath, SettingsFileName);
+                            var json = JsonConvert.SerializeObject(_deviceSettingsValues);
+
+                            Log.Debug(() => "Json: " + json);
+
+                            File.WriteAllText(path, json);
+
+                            _deviceSettingsDirty = false;
+
+                            Log.Debug("Device settings saved");
+                        }
+                        catch (Exception exception)
+                        {
+                            Log.Error(exception);
+                        }
+                    }
+                }
             }
-            return setting.DefaultValue;
+
+            if ((type & SettingType.User) == SettingType.User)
+            {
+                if (!UserSettingsLoaded)
+                {
+                    Log.Warn("Saving. User settings not loaded");
+                }
+                else
+                {
+                    if (!_userSettingsDirty)
+                    {
+                        Log.Debug("User settings not dirty");
+                    }
+                    else
+                    {
+                        Log.Debug("Saving user settings...");
+
+                        // We put in try/catch as this operation is performed when app is shutting down or put on pause.
+                        // If it'll fail with an exception, other operations must not be interrupted.   
+                        try
+                        {
+                            var path = Path.Combine(AppController.PersistentDataPath, UserId, SettingsFileName);
+                            var json = JsonConvert.SerializeObject(_userSettingsValues);
+
+                            Log.Debug(() => "Json: " + json);
+
+                            File.WriteAllText(path, json);
+
+                            _userSettingsDirty = false;
+
+                            Log.Debug(i => $"User settings saved. UserId: {i}", UserId);
+                        }
+                        catch (Exception exception)
+                        {
+                            Log.Error(exception);
+                        }
+                    }
+                }
+            }
         }
 
         /*
          * Helpers.
          */
 
-        private bool CheckNotLoaded()
+        private Dictionary<string, object> ParseSettingsJson(string json, SettingType type)
         {
-            if (!IsLoaded)
-                return true;
+            Log.Debug("Parsing settings json...");
+            Log.Debug(j => $"Json: {j}", json);
 
-            Log.Error("Settings already loaded.");
-            return false;
+            var settings = JsonConvert.DeserializeObject<Dictionary<string, string>>(json);
+            var values = new Dictionary<string, object>();
+
+            foreach (var setting in _settings)
+            {
+                if (setting.type != type)
+                {
+                    Log.Debug((t, k) => $"Setting has unmatched type and will be ignored. Type: {t} Key: {k}", type, setting.key);
+                    continue;
+                }
+
+                if (!settings.TryGetValue(setting.key, out var value))
+                    continue;
+
+                Log.Debug(() => setting.key + ": " + value);
+
+                if (bool.TryParse(value, out var valueBool))
+                    values[setting.key] = valueBool;
+                else if (int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var valueInt))
+                    values[setting.key] = valueInt;
+                else if (float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out var valueFloat))
+                    values[setting.key] = valueFloat;
+            }
+
+            return values;
+        }
+
+        private T GetSettingValueFrom<T>(IReadOnlyDictionary<string, object> values, Setting<T> setting) where T : struct
+        {
+            if (!values.TryGetValue(setting.key, out var value))
+                return setting.DefaultValue;
+
+            if (typeof(T).IsEnum)
+                return (T)Enum.ToObject(typeof(T), Convert.ToInt32(value));
+
+            return (T)Convert.ChangeType(value, typeof(T));
         }
 
         /*
@@ -290,10 +422,10 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         private void OnAppPause(bool paused)
         {
             if (paused)
-                Save(false);
+                Save(SettingType.Device | SettingType.User);
         }
 
-        private void OnAppRestarting() { Save(false); }
-        private void OnAppQuitting()   { Save(false); }
+        private void OnAppRestarting() { Save(SettingType.Device | SettingType.User); }
+        private void OnAppQuitting()   { Save(SettingType.Device | SettingType.User); }
     }
 }

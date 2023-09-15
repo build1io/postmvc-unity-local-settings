@@ -3,14 +3,13 @@ using Build1.PostMVC.Core.MVCS.Injection;
 
 namespace Build1.PostMVC.Unity.Settings.Commands
 {
-    [Poolable]
-    public sealed class SettingSetBoolCommand : Command<bool, Setting<bool>>
+    public sealed class UnloadUserSettingsCommand : Command
     {
         [Inject] public ISettingsController SettingsController { get; set; }
 
-        public override void Execute(bool value, Setting<bool> setting)
+        public override void Execute()
         {
-            SettingsController.SetSetting(setting, value);
+            SettingsController.UnloadUserSettings();
         }
     }
 }

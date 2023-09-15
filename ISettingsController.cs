@@ -4,18 +4,21 @@ namespace Build1.PostMVC.Unity.Settings
 {
     public interface ISettingsController
     {
-        IEnumerable<Setting> ExistingSettings { get; }
-        bool                 IsLoaded         { get; }
+        bool   Initialized          { get; }
+        bool   DeviceSettingsLoaded { get; }
+        bool   UserSettingsLoaded   { get; }
+        string UserId               { get; }
 
-        void SetUserId(string userId);
+        void Initialize(IEnumerable<Setting> settings);
+        void LoadDeviceSettings();
 
-        void Load(IEnumerable<Setting> existingSettings);
-        void Load(IEnumerable<Setting> existingSettings, string userId);
-        void Unload();
-        void Save(bool force);
-        void Reset();
+        void LoadUserSettings(string userId);
+        void UnloadUserSettings();
 
-        T    GetSetting<T>(Setting<T> setting) where T : struct;
-        void SetSetting<T>(Setting<T> setting, T value) where T : struct;
+        T    Get<T>(Setting<T> setting) where T : struct;
+        void Set<T>(Setting<T> setting, T value) where T : struct;
+
+        void Reset(SettingType type);
+        void Save(SettingType type);
     }
 }

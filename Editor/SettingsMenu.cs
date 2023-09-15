@@ -7,14 +7,25 @@ namespace Build1.PostMVC.Unity.Settings.Editor
 {
     public static class SettingsMenu
     {
-        [MenuItem("Tools/Build1/PostMVC/Settings/Open Folder", false, 20)]
+        [MenuItem("Tools/Build1/PostMVC/Settings/Reset Device Settings", false, 20)]
+        public static void SettingsResetDevice()
+        {
+            ResetImpl(SettingType.Device);
+        }
+        
+        [MenuItem("Tools/Build1/PostMVC/Settings/Reset User Settings", false, 21)]
+        public static void SettingsResetUser()
+        {
+            ResetImpl(SettingType.User);
+        }
+        
+        [MenuItem("Tools/Build1/PostMVC/Settings/Open Folder", false, 122)]
         public static void OpenFolder()
         {
             EditorUtility.RevealInFinder(Application.persistentDataPath);
         }
 
-        [MenuItem("Tools/Build1/PostMVC/Settings/Reset", false, 21)]
-        public static void SettingsReset()
+        private static void ResetImpl(SettingType type)
         {
             if (!Application.isPlaying)
             {
@@ -24,7 +35,7 @@ namespace Build1.PostMVC.Unity.Settings.Editor
                                             "Ok");
                 return;
             }
-
+            
             var settingsController = Core.PostMVC.GetInstance<ISettingsController>();
             if (settingsController == null)
             {
@@ -32,9 +43,9 @@ namespace Build1.PostMVC.Unity.Settings.Editor
                 return;
             }
             
-            settingsController.Reset();
+            settingsController.Reset(type);
             
-            Debug.Log("Settings reset.");
+            Debug.Log($"Settings reset. Type: {type}");
         }
     }
 }
