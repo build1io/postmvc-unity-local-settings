@@ -67,13 +67,13 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         {
             if (!Initialized)
             {
-                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, new Exception("Settings not initialized"));
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.Device, SettingsErrorCode.SettingsNotInitialized));
                 return;
             }
 
             if (DeviceSettingsLoaded)
             {
-                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, new Exception("Device settings already loaded"));
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.Device, SettingsErrorCode.DeviceSettingsAlreadyLoaded));
                 return;
             }
 
@@ -100,13 +100,13 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             catch (Exception exception)
             {
                 Log.Error(exception);
-                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, exception);
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.Device, exception));
                 return;
             }
 
             Log.Debug("Device settings loaded");
 
-            Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.Device, null);
+            Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.Device));
         }
 
         /*
@@ -117,7 +117,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
         {
             if (!Initialized)
             {
-                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, new Exception("Settings not initialized"));
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.User, SettingsErrorCode.SettingsNotInitialized));
                 return;
             }
 
@@ -125,7 +125,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             {
                 if (UserId == userId)
                 {
-                    Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, new Exception("User settings already loaded"));
+                    Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.User, SettingsErrorCode.UserSettingsAlreadyLoaded));
                     return;
                 }
 
@@ -155,7 +155,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             catch (Exception exception)
             {
                 Log.Error(exception);
-                Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, exception);
+                Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.User, exception));
                 return;
             }
 
@@ -163,7 +163,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
 
             UserId = userId;
 
-            Dispatcher.Dispatch(SettingsEvent.LoadResult, SettingType.User, null);
+            Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.User));
         }
 
         public void UnloadUserSettings()

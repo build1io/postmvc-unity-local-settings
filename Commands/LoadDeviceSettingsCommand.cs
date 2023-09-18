@@ -1,4 +1,3 @@
-using System;
 using Build1.PostMVC.Core.MVCS.Commands;
 using Build1.PostMVC.Core.MVCS.Events;
 using Build1.PostMVC.Core.MVCS.Injection;
@@ -22,13 +21,13 @@ namespace Build1.PostMVC.Unity.Settings.Commands
             SettingsController.LoadDeviceSettings();
         }
 
-        private void OnSettingsLoaded(SettingType type, Exception exception)
+        private void OnSettingsLoaded(SettingsResult result)
         {
-            if (type != SettingType.Device)
+            if (result.settingsType != SettingType.Device)
                 return;
             
-            if (exception != null)
-                Fail(exception);
+            if (result.isError)
+                Fail(result.ToException());
             else
                 Release();
         }

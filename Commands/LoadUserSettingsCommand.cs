@@ -1,4 +1,3 @@
-using System;
 using Build1.PostMVC.Core.MVCS.Commands;
 using Build1.PostMVC.Core.MVCS.Events;
 using Build1.PostMVC.Core.MVCS.Injection;
@@ -22,13 +21,13 @@ namespace Build1.PostMVC.Unity.Settings.Commands
             SettingsController.LoadUserSettings(userId);
         }
 
-        private void OnSettingsLoad(SettingType type, Exception exception)
+        private void OnSettingsLoad(SettingsResult result)
         {
-            if (type != SettingType.User || SettingsController.UserId != Param01)
+            if (result.settingsType != SettingType.User || SettingsController.UserId != Param01)
                 return;
             
-            if (exception != null)
-                Fail(exception);
+            if (result.isError)
+                Fail(result.ToException());
             else
                 Release();
         }
