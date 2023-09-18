@@ -16,7 +16,7 @@ namespace Build1.PostMVC.Unity.Settings.Commands
             
             Retain();
             
-            Dispatcher.AddListenerOnce(SettingsEvent.LoadResult, OnSettingsLoad);
+            Dispatcher.AddListener(SettingsEvent.LoadResult, OnSettingsLoad);
 
             SettingsController.LoadUserSettings(userId);
         }
@@ -25,6 +25,8 @@ namespace Build1.PostMVC.Unity.Settings.Commands
         {
             if (result.settingsType != SettingType.User || SettingsController.UserId != Param01)
                 return;
+            
+            Dispatcher.RemoveListener(SettingsEvent.LoadResult, OnSettingsLoad);
             
             if (result.isError)
                 Fail(result.ToException());

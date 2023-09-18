@@ -20,7 +20,7 @@ namespace Build1.PostMVC.Unity.Settings.Commands
             
             Retain();
             
-            Dispatcher.AddListenerOnce(SettingsEvent.LoadResult, OnSettingsLoaded);
+            Dispatcher.AddListener(SettingsEvent.LoadResult, OnSettingsLoaded);
             
             SettingsController.LoadDeviceSettings();
         }
@@ -29,6 +29,8 @@ namespace Build1.PostMVC.Unity.Settings.Commands
         {
             if (result.settingsType != SettingType.Device)
                 return;
+            
+            Dispatcher.RemoveListener(SettingsEvent.LoadResult, OnSettingsLoaded);
             
             if (result.isError)
                 Fail(result.ToException());
