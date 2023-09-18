@@ -239,7 +239,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
                     throw new ArgumentOutOfRangeException();
             }
 
-            Dispatcher.Dispatch(SettingsEvent.SettingChanged, setting);
+            Dispatcher.Dispatch(SettingsEvent.Changed, setting);
         }
 
         /*
