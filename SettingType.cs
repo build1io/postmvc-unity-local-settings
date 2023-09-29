@@ -6,6 +6,8 @@ namespace Build1.PostMVC.Unity.Settings
     public enum SettingType
     {
         Device = 1 << 0,
-        User   = 1 << 1
+        User   = 1 << 1,
+        
+        All = Device | User
     }
 }
