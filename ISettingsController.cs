@@ -10,8 +10,10 @@ namespace Build1.PostMVC.Unity.Settings
         string UserId               { get; }
 
         void Initialize(IEnumerable<Setting> settings);
-
+        
         void LoadDeviceSettings();
+        bool CheckDeviceSettingsWasEverChanged();
+        
         void LoadUserSettings(string userId);
         void UnloadUserSettings();
 

@@ -109,6 +109,12 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Dispatcher.Dispatch(SettingsEvent.LoadResult, new SettingsResult(SettingType.Device));
         }
 
+        public bool CheckDeviceSettingsWasEverChanged()
+        {
+            var path = Path.Combine(AppController.PersistentDataPath, SettingsFileName);
+            return File.Exists(path);
+        }
+
         /*
          * User Settings.
          */
