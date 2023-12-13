@@ -178,6 +178,25 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             Dispatcher.Dispatch(SettingsEvent.Unload, SettingType.User);
         }
 
+        public bool CheckSettingSet<T>(Setting<T> setting) where T : struct
+        {
+            switch (setting.type)
+            {
+                case SettingType.Device:
+                    if (!DeviceSettingsLoaded)
+                        throw new Exception("Device settings not loaded");
+                    return _deviceSettingsValues.ContainsKey(setting.key);
+                
+                case SettingType.User:
+                    if (!UserSettingsLoaded)
+                        throw new Exception("User settings not loaded");
+                    return _userSettingsValues.ContainsKey(setting.key);
+                
+                default:
+                    throw new ArgumentOutOfRangeException();
+            }
+        }
+
         /*
          * Management.
          */

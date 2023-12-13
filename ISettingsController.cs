@@ -10,11 +10,12 @@ namespace Build1.PostMVC.Unity.Settings
         string UserId               { get; }
 
         void Initialize(IEnumerable<Setting> settings);
-        void LoadDeviceSettings();
 
+        void LoadDeviceSettings();
         void LoadUserSettings(string userId);
         void UnloadUserSettings();
 
+        bool CheckSettingSet<T>(Setting<T> setting) where T : struct;
         T    Get<T>(Setting<T> setting) where T : struct;
         void Set<T>(Setting<T> setting, T value) where T : struct;
 
