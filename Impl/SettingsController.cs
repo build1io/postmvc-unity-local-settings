@@ -318,7 +318,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             {
                 if (!DeviceSettingsLoaded)
                 {
-                    Log.Warn("Saving. Device settings not loaded");
+                    Log.Debug("Saving. Device settings not loaded");
                 }
                 else
                 {
@@ -357,7 +357,7 @@ namespace Build1.PostMVC.Unity.Settings.Impl
             {
                 if (!UserSettingsLoaded)
                 {
-                    Log.Warn("Saving. User settings not loaded");
+                    Log.Debug("Saving. User settings not loaded");
                 }
                 else
                 {
